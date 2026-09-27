@@ -1,0 +1,19 @@
+# Frontend dependencies and generated output
+frontend/node_modules/
+frontend/.npm-cache/
+frontend/dist/
+
+# Backend generated output
+backend/target/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log

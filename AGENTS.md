@@ -7,10 +7,9 @@
 - Phase 1 has a fixture-first `/frontend` and `/backend` implementation with the validated Priya flow and an explicitly authorized Junior Accountant fixed example. Forrest's accounting-realism decisions are recorded in `docs/forrest-review.md`.
 - Phase 2 is publicly deployed at `https://relaunch.hermanlidev.com` from the source tree now recorded by commit `379a924`. The server release directory retains the pre-GitHub, email-only-history-rewrite label `dd69b03`; both commits have the same Git tree. The deployment uses the `relaunch` Compose project, binds the frontend only to `127.0.0.1:8088`, keeps the backend internal, and terminates TLS in the host Nginx virtual host. Operational details are in `deploy/README.md`.
 - This directory is a Git repository on `main`. Inspect the current Git state before making claims about the active commit, cleanliness, or later changes. Do not push without Herman's explicit authorization.
-- The Phase 1 analyzer intentionally returns the fixed Priya fixture; live AI and generalized response validation belong to later phases.
-- An explicitly authorized early Phase 3 slice exists in `backend/.../analysis`: provider-independent JSON/schema, evidence, credential, classification, retry, and safe-failure validation. It is not wired to the controller. Do not add a real provider or production classification lists until separately authorized and Forrest's lists are available.
-- Do not work ahead of the phase authorized by the user. Phase 2 deployment and its operational closeout do not authorize a real AI provider or any Phase 4 work.
-
+- Phase 3 provider wiring is locally implemented: only `POST /api/reentry/analyze` may invoke the provider-neutral analysis service; `GET /api/reentry/demo` and the Junior Accountant example remain fixed, validated fixtures independent of model availability. Without `DASHSCOPE_API_KEY`, POST must safely return `502 ANALYSIS_FAILED` while both fixtures still work.
+- Forrest has finalized the spec §8 READY and §9 REFRESH lists, plus Priya §16 classifications, CPA evidence, and credential wording for Phase 3. DashScope details remain isolated to `backend/.../analysis` adapter/configuration; no key value may be committed or logged. Offline tests only unless Herman separately authorizes a live call.
+- Do not work ahead of the phase authorized by the user. Phase 4 remains unauthorized: do not change plan trimming, `continueWith`, or break-story privacy semantics; do not deploy or push without separate explicit authorization.
 ## Verified project commands
 
 Run from `frontend/`:

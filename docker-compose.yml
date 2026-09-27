@@ -2,6 +2,9 @@ services:
   backend:
     build:
       context: ./backend
+    environment:
+      - DASHSCOPE_API_KEY
+      - DASHSCOPE_BASE_URL
     expose:
       - "8080"
     healthcheck:

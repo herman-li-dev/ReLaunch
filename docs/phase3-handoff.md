@@ -1,67 +1,46 @@
-# Phase 3 provider handoff — pending Forrest/Root confirmation
+# Phase 3 provider handoff
 
-**Date:** 2026-09-26  
-**Status:** A handoff record pending Forrest and Root confirmation. It does **not** mean a real AI provider is integrated or authorized.
+**Date:** 2026-09-27
+**Status:** The Phase 3 DashScope provider path is implemented and tested offline. It has not been deployed, no real AI call has been made, and public traffic must remain on the validated fixture release until separately authorized.
 
-Current state: the provider-independent `analysis` slice validates/parses raw responses but is not wired to `ReentryController`. `GET /api/reentry/demo` and `POST /api/reentry/analyze` still return the fixed Priya fixture. Do not change that fixture behavior until the gates below are approved.
+## Authorized Forrest decisions
 
-## Forrest decision checklist
+- [x] The frozen spec §8 initial READY list is the final production list: journal entries; general ledger; account reconciliation; month-end close; financial statement preparation; variance analysis; accounts payable; accounts receivable; accruals; cash-flow analysis; audit support; stakeholder communication.
+- [x] The frozen spec §9 initial REFRESH list is the final production list: Oracle; SAP; NetSuite; QuickBooks Online; Sage; Workday; ERP systems; Excel; Power Query; Power BI; Tableau; automation tools; reporting systems.
+- [x] Priya’s §16 classifications are confirmed: six READY, Excel REFRESH, NetSuite and Power BI LEARN, and CPA.
+- [x] CPA evidence is the exact original resume substring `CPA (Chartered Professional Accountant), 2021`; credential wording remains “confirm with the issuing body.” ReLaunch does not verify status or state licensing, CPD, tax, or regulatory requirements.
+- [x] READY/REFRESH evidence must be an exact original-resume substring (at most 200 characters); LEARN evidence is `null`.
 
-### Classification candidates (not final)
+## Implemented provider boundary
 
-- [ ] Finalize or revise the initial READY candidates: journal entries; general ledger; account reconciliation; month-end close; financial statement preparation; variance analysis; accounts payable; accounts receivable; accruals; cash-flow analysis; audit support; stakeholder communication.
-- [ ] Finalize or revise the initial REFRESH candidates: Oracle; SAP; NetSuite; QuickBooks Online; Sage; Workday; ERP systems; Excel; Power Query; Power BI; Tableau; automation tools; reporting systems.
-- [ ] Confirm Priya’s resume, Senior Accountant job description, and accounting terminology are realistic.
-- [ ] Confirm or correct the expected Priya result (the named classifications matter, not only the counts):
-  - READY: journal entries; month-end close; account reconciliations; financial statements; variance analysis; audit support.
-  - REFRESH: Excel.
-  - LEARN: NetSuite; Power BI.
-  - Credential: CPA, evidenced by `CPA (Chartered Professional Accountant), 2021`.
-- [ ] Confirm or correct these six candidate accounting comeback tasks, each scoped to 30, 45, or 60 minutes:
-  - Complete one sample bank reconciliation in Excel.
-  - Prepare three sample month-end journal entries.
-  - Recreate a simple variance-analysis report using sample financial data.
-  - Review a sample month-end close checklist.
-  - Rebuild a basic account reconciliation schedule.
-  - Explore the current NetSuite interface and identify the basic month-end workflow.
-- [ ] Confirm READY/REFRESH evidence uses an exact resume quote and LEARN evidence is `null`.
-- [ ] Confirm each Priya plan week is at most 300 minutes.
-- [ ] Confirm the final week contains the resume-update task.
-- [ ] Confirm credential wording remains “confirm with the issuing body”; ReLaunch must not verify credentials or state accounting, licensing, CPD, tax, or regulatory requirements.
+- `RawAnalysisProvider` remains provider-neutral. `DashScopeRawAnalysisProvider` owns all DashScope/Spring AI prompt and option details.
+- Only `POST /api/reentry/analyze` invokes `AnalysisService`. `GET /api/reentry/demo` and `GET /api/reentry/examples/maya-junior-accountant` always use fixed fixtures and never need model availability.
+- The adapter uses `qwen-plus`, temperature `0.2`, `JSON_OBJECT`, synchronous non-streaming output, empty tools/callbacks, no search, and no RAG implementation.
+- The full frozen system/user prompt supplies resume, target job, break inputs, finalized classification lists/rules, plan rules, break-story rules, and response schema. It does not log any of that content.
+- The processor accepts whitespace-normalized matching only to locate evidence, then returns the corresponding literal substring from the original resume. Unverifiable skills become LEARN; unverifiable credentials are removed.
+- Invalid JSON/schema is retried once by `AnalysisService`. Provider exceptions, timeouts, empty output, or two invalid responses map to `502 {"error":"ANALYSIS_FAILED"}` without leaking detail.
 
-## Provider integration plan and gates
+## Configuration and safety
 
-Proceed in this order. A later step is blocked until the preceding one has passed review and regression checks.
+- Dependency matrix verified from the official Spring AI Alibaba 1.0.0.2 guidance: Spring Boot 3.4.5, Spring AI 1.0.0, Spring AI Alibaba 1.0.0.2, and `spring-ai-alibaba-starter-dashscope`.
+- The official properties are `spring.ai.dashscope.api-key`, `spring.ai.dashscope.base-url`, and `spring.ai.dashscope.read-timeout`. The project maps only `DASHSCOPE_API_KEY` (and optional `DASHSCOPE_BASE_URL`) into those properties; no value is tracked or logged.
+- Version 1.0.0.2 auto-configures unrelated DashScope components and fails application startup when a key is absent. The app explicitly excludes those starter auto-configurations and creates only the synchronous chat model when a key is present. This preserves fixture GET routes when no key is configured.
+- `spring.ai.dashscope.base-url` is configurable. Its default matches the resolved 1.0.0.2 library default, `https://dashscope.aliyuncs.com`; an international/Singapore endpoint must be separately verified for this provider API shape before use.
+- Docker Compose passes the environment variable names only: `DASHSCOPE_API_KEY` and `DASHSCOPE_BASE_URL`.
 
-1. **Fix whitespace normalization in `AnalysisResponseProcessor`.** Align server-side quote verification with the frozen whitespace-normalization rule while preserving the requirement that accepted evidence is traceable to the original resume. Add deterministic edge-case tests before provider wiring.
-2. **Complete the required security dependency upgrade, then run the full regression suite.** Do not add a provider starter until the upgrade is reviewed and tests/package/build are green.
-3. **Choose and verify a compatible dependency matrix.** The project currently uses Spring Boot **3.4.5**. The official Spring AI Alibaba main branch currently declares Boot **3.5.8**, Spring AI **1.1.2**, and extension **1.1.2.2**. This is not evidence of direct compatibility with this project; select and verify a compatible matrix before adding any starter.
-4. **Keep `RawAnalysisProvider` provider-neutral.** The existing application-facing boundary remains provider independent; no Alibaba, DashScope, Spring AI, model, region, or base-URL detail belongs in `AnalysisService` or `AnalysisResponseProcessor`.
-5. **Add a DashScope adapter only after the gates above.** Only that adapter may use DashScope/Spring AI Alibaba. Use the Alibaba Cloud-recommended environment-variable name `DASHSCOPE_API_KEY` (name only; never record a value) and map it to Spring AI Alibaba `spring.ai.dashscope.api-key`.
-6. **Lock provider settings before implementation.** Choose the model, region, and base URL from verified provider documentation/configuration; do not guess. Configure temperature `0.2`, JSON-only output, no tools, no RAG, no streaming, and a finite timeout.
-7. **Wire routes deliberately.** `GET /api/reentry/demo` remains fixture-based and independent forever. Only `POST /api/reentry/analyze` may call the service after provider approval.
-8. **Preserve bounded failure handling.** Invalid JSON/schema receives at most one retry. Provider/timeout failures do not retry indefinitely and map safely to `502 {"error":"ANALYSIS_FAILED"}`.
-9. **Preserve privacy.** Never log request bodies, resumes, job text, raw model output, or keys. Logs may contain only request ID, status, and latency.
-10. **Keep tests offline by default.** Deterministic fake-provider tests are the default. A live-provider smoke test requires separate user authorization.
+## Offline verification
 
-## Scope held back
+- `AnalysisResponseProcessorTest`: parser/schema, exact original evidence and credential quotes, classification, max-skill count, and evidence rejection.
+- `AnalysisServiceTest`: exactly one invalid-response retry, provider failure safety, and 502 mapping.
+- `DashScopeRawAnalysisProviderTest`: prompt sections and DashScope options using a mocked `ChatModel`; no network/model invocation.
+- `ReentryApiTest`: both fixtures retain their fixed contracts; with no API key the application starts and POST returns the safe 502 response.
 
-This handoff does not authorize or include login, database, uploads, RAG, Phase 4 plan trimming/`continueWith`/break-story privacy semantics, remote deployment, commits, or pushes.
+## Held back
 
-## Root acceptance checks
-
-- [ ] Unit tests cover parser, quote/credential handling, parameterized classification, retry bounds, provider failure, and 502 mapping.
-- [ ] Backend package/build passes after the selected dependency matrix is added.
-- [ ] Docker smoke verifies the fixture flow through the local deployment boundary.
-- [ ] Priya fixture remains 6 READY / 1 REFRESH / 2 LEARN with CPA.
-- [ ] Log review confirms no resume, job text, request body, raw provider output, or key leakage.
-- [ ] `ANALYSIS_FAILED` remains a safe 502 response.
-- [ ] Security dependencies are rescanned after the upgrade.
-- [ ] Root performs the final diff and frozen-spec review before merging/deploying.
+Phase 4 is not implemented: no plan trimming, `continueWith` repair, break-story privacy rewrite, or changed fixture plan/story semantics. This Phase 3 implementation has not been remotely deployed or exercised against public live traffic. A live-provider smoke test requires separate user authorization.
 
 ## Official references
 
-- [Spring AI Alibaba DashScope](https://java2ai.com/en/integration/chatmodels/dashScope/)
-- [Spring AI ChatClient](https://docs.spring.io/spring-ai/reference/api/chatclient.html)
-- [Alibaba Cloud API key guidance](https://help.aliyun.com/en/model-studio/get-api-key)
-- [Spring AI Alibaba project](https://github.com/alibaba/spring-ai-alibaba)
+- [Spring AI Alibaba 1.0.0.2 component and compatibility guidance](https://www.java2ai.com/en/docs/1.0.0.2/tutorials/starters-and-quick-guide/)
+- [Spring AI Alibaba compatibility FAQ](https://java2ai.com/docs/1.0.0.2/faq/)
+- [Alibaba Cloud API-key guidance](https://help.aliyun.com/en/model-studio/get-api-key)

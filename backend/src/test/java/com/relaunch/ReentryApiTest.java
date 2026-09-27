@@ -87,13 +87,11 @@ class ReentryApiTest {
     }
 
     @Test
-    void analyzeReturnsTheSameFixtureForValidPhaseOneInput() throws Exception {
+    void analyzeFailsSafelyWithoutDashScopeApiKey() throws Exception {
         mockMvc.perform(post("/api/reentry/analyze").contentType(MediaType.APPLICATION_JSON).content(validRequest()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.skills", hasSize(9)))
-                .andExpect(jsonPath("$.continueWith", empty()));
+                .andExpect(status().isBadGateway())
+                .andExpect(content().json("{\"error\":\"ANALYSIS_FAILED\"}"));
     }
-
     @Test
     void invalidBoundsReturnSpecifiedFieldErrors() throws Exception {
         mockMvc.perform(post("/api/reentry/analyze").contentType(MediaType.APPLICATION_JSON)

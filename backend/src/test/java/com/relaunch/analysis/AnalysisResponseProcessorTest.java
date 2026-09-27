@@ -83,8 +83,8 @@ class AnalysisResponseProcessorTest {
     }
 
     @Test
-    void normalizesWhitespaceForComparisonButPreservesOriginalSkillAndCredentialQuotes() {
-        String quote = "  Prepared monthly\tjournal entries and supported month-end close.  ";
+    void normalizesWhitespaceForComparisonAndReturnsOriginalResumeSubstrings() {
+        String modelQuote = "  Prepared monthly\tjournal entries and supported month-end close.  ";
         String resume = "Prepared  monthly journal entries\r\nand supported month-end close.";
         String raw = """
                 {"skills":[{"name":"Month-end close","status":"READY","resumeQuote":"  Prepared monthly\\tjournal entries and supported month-end close.  ","reason":"Evidence exists."}],
@@ -94,8 +94,8 @@ class AnalysisResponseProcessorTest {
 
         ReentryResponse result = processor.process(raw, resume, 24, rules);
         assertThat(result.skills().getFirst().status()).isEqualTo("REFRESH");
-        assertThat(result.skills().getFirst().resumeQuote()).isEqualTo(quote);
-        assertThat(result.credentials().getFirst().resumeQuote()).isEqualTo(quote);
+        assertThat(result.skills().getFirst().resumeQuote()).isEqualTo(resume);
+        assertThat(result.credentials().getFirst().resumeQuote()).isEqualTo(resume);
     }
 
     @Test

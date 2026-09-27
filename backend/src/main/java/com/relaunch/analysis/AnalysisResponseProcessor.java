@@ -100,17 +100,19 @@ public class AnalysisResponseProcessor {
         if (status.equals("LEARN")) {
             return new ReentryResponse.Skill(name, "LEARN", null, reason);
         }
-        if (!isVerifiedQuote(quote, resumeText)) {
+        String verifiedQuote = originalResumeSubstring(quote, resumeText);
+        if (verifiedQuote == null) {
             return new ReentryResponse.Skill(name, "LEARN", null, MISSING_EVIDENCE_REASON);
         }
-        return new ReentryResponse.Skill(name, rules.classify(name, breakMonths), quote, reason);
+        return new ReentryResponse.Skill(name, rules.classify(name, breakMonths), verifiedQuote, reason);
     }
 
     private ReentryResponse.Credential processCredential(JsonNode credential, String resumeText) {
         requireObject(credential, "credential");
         String name = requiredText(credential, "name");
         String quote = nullableText(requiredField(credential, "resumeQuote"), "resumeQuote");
-        return isVerifiedQuote(quote, resumeText) ? new ReentryResponse.Credential(name, quote) : null;
+        String verifiedQuote = originalResumeSubstring(quote, resumeText);
+        return verifiedQuote == null ? null : new ReentryResponse.Credential(name, verifiedQuote);
     }
 
     private ReentryResponse.PlanWeek parseWeek(JsonNode week) {
@@ -125,15 +127,50 @@ public class AnalysisResponseProcessor {
         return new ReentryResponse.PlanWeek(number, totalMinutes, blocks);
     }
 
-    private boolean isVerifiedQuote(String quote, String resumeText) {
-        return quote != null && !quote.isBlank() && quote.length() <= 200 && resumeText != null
-                && normalizeWhitespace(resumeText).contains(normalizeWhitespace(quote));
+    private String originalResumeSubstring(String quote, String resumeText) {
+        if (quote == null || quote.isBlank() || quote.length() > 200 || resumeText == null) {
+            return null;
+        }
+        NormalizedText normalizedResume = normalizeWithOffsets(resumeText);
+        String normalizedQuote = normalizeWhitespace(quote);
+        int normalizedStart = normalizedResume.value().indexOf(normalizedQuote);
+        if (normalizedStart < 0) {
+            return null;
+        }
+        int originalStart = normalizedResume.originalOffsets().get(normalizedStart);
+        int originalEnd = normalizedResume.originalOffsets().get(normalizedStart + normalizedQuote.length() - 1) + 1;
+        String originalSubstring = resumeText.substring(originalStart, originalEnd);
+        return originalSubstring.length() <= 200 ? originalSubstring : null;
     }
 
     private String normalizeWhitespace(String text) {
-        return text.trim().replaceAll("\\s+", " ");
+        return normalizeWithOffsets(text).value();
     }
 
+    private NormalizedText normalizeWithOffsets(String text) {
+        StringBuilder normalized = new StringBuilder();
+        List<Integer> originalOffsets = new ArrayList<>();
+        int whitespaceStart = -1;
+        for (int index = 0; index < text.length(); index++) {
+            char character = text.charAt(index);
+            if (Character.isWhitespace(character)) {
+                if (whitespaceStart < 0 && !normalized.isEmpty()) {
+                    whitespaceStart = index;
+                }
+                continue;
+            }
+            if (whitespaceStart >= 0) {
+                normalized.append(' ');
+                originalOffsets.add(whitespaceStart);
+                whitespaceStart = -1;
+            }
+            normalized.append(character);
+            originalOffsets.add(index);
+        }
+        return new NormalizedText(normalized.toString(), originalOffsets);
+    }
+
+    private record NormalizedText(String value, List<Integer> originalOffsets) {}
     private JsonNode requiredObject(JsonNode parent, String field) {
         JsonNode value = parent.isObject() && parent.has(field) ? parent.get(field) : null;
         requireObject(value, field);

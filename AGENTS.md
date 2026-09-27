@@ -4,11 +4,12 @@
 
 ## Current repository state
 
-- Phase 1 has a fixture-first `/frontend` and `/backend` implementation. Phase 2 adds a locally verified Docker Compose/Nginx deployment boundary; public deployment still requires the real server, subdomain, DNS, and TLS details. Do not work ahead of the phase authorized by the user.
-- The directory is not a Git repository. Do not claim a Git diff, branch state, or commit status is available.
+- Phase 1 has a fixture-first `/frontend` and `/backend` implementation with the validated Priya flow and an explicitly authorized Junior Accountant fixed example. Forrest's accounting-realism decisions are recorded in `docs/forrest-review.md`.
+- Phase 2 is publicly deployed at `https://relaunch.hermanlidev.com` from the source tree now recorded by commit `379a924`. The server release directory retains the pre-GitHub, email-only-history-rewrite label `dd69b03`; both commits have the same Git tree. The deployment uses the `relaunch` Compose project, binds the frontend only to `127.0.0.1:8088`, keeps the backend internal, and terminates TLS in the host Nginx virtual host. Operational details are in `deploy/README.md`.
+- This directory is a Git repository on `main`. Inspect the current Git state before making claims about the active commit, cleanliness, or later changes. Do not push without Herman's explicit authorization.
 - The Phase 1 analyzer intentionally returns the fixed Priya fixture; live AI and generalized response validation belong to later phases.
 - An explicitly authorized early Phase 3 slice exists in `backend/.../analysis`: provider-independent JSON/schema, evidence, credential, classification, retry, and safe-failure validation. It is not wired to the controller. Do not add a real provider or production classification lists until separately authorized and Forrest's lists are available.
-- Phase 1 is not complete until Forrest performs the accounting-realism review required by `spec.md`.
+- Do not work ahead of the phase authorized by the user. Phase 2 deployment and its operational closeout do not authorize a real AI provider or any Phase 4 work.
 
 ## Verified project commands
 
